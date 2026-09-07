@@ -60,8 +60,20 @@ jobs:
           cd ak3_out
           zip -r9 "../r11s-LineageOS-KSUN-SUSFS-${GITHUB_REF_NAME}.zip" . -x '*.git*'
 
+      - name: Resolve release notes
+        id: notes
+        run: |
+          NOTES_FILE="docs/release-notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES_FILE" ]; then
+            echo "path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+          else
+            echo "No prewritten notes for $GITHUB_REF_NAME, using auto-generated notes only."
+            echo "path=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: r11s-LineageOS-KSUN-SUSFS-*.zip
+          body_path: ${{ steps.notes.outputs.path || null }}
           generate_release_notes: true
