@@ -1,0 +1,83 @@
+name: Build kernel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kernel_source/**'
+      - 'anykernel3_template/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flex bison libssl-dev bc cpio device-tree-compiler \
+            clang lld llvm ccache zip
+
+      - name: Set up ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('kernel_source/arch/arm64/configs/r11s_ksun_susfs_defconfig') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-
+
+      - name: Configure ccache
+        run: |
+          mkdir -p ~/.ccache
+          ccache --set-config=cache_dir=~/.ccache
+          ccache --set-config=max_size=2G
+          echo "/usr/lib/ccache" >> $GITHUB_PATH
+
+      - name: Show toolchain versions
+        run: |
+          clang --version
+          ld.lld --version
+
+      - name: Configure kernel
+        working-directory: kernel_source
+        run: |
+          make ARCH=arm64 O=out LLVM=1 r11s_ksun_susfs_defconfig
+          make ARCH=arm64 O=out LLVM=1 olddefconfig
+
+      - name: Build kernel
+        working-directory: kernel_source
+        run: |
+          make ARCH=arm64 O=out LLVM=1 CC="ccache clang" -j$(nproc) Image
+
+      - name: Verify usb_disable_autosuspend export (regression guard)
+        working-directory: kernel_source
+        run: |
+          nm out/vmlinux | grep -E "__ksymtab_usb_disable_autosuspend|T usb_disable_autosuspend" \
+            || { echo "::error::usb_disable_autosuspend export missing - TRIM_UNUSED_KSYMS regression?"; exit 1; }
+
+      - name: Package AnyKernel3 zip
+        run: |
+          cp -r anykernel3_template ak3_out
+          cp kernel_source/out/arch/arm64/boot/Image ak3_out/Image
+          cd ak3_out
+          zip -r9 ../r11s-LineageOS-KSUN-SUSFS-${{ github.sha }}.zip . -x '*.git*'
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: r11s-KSUN-SUSFS-${{ github.sha }}
+          path: r11s-LineageOS-KSUN-SUSFS-*.zip
+          retention-days: 14
+
+      - name: Upload build log context
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-config-${{ github.sha }}
+          path: kernel_source/out/.config
+          retention-days: 14
