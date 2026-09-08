@@ -46,9 +46,6 @@ object Natives {
     val isLkmMode: Boolean
         external get
 
-    val isLkmBundled: Boolean
-        external get
-
     val isLateLoadMode: Boolean
         external get
 
@@ -170,8 +167,12 @@ object Natives {
     val managerUAPIVersion: Int
         external get
 
-    fun isFullFeatured(): Boolean {
-        return isManager && kernelUAPIVersion == managerUAPIVersion && com.rifsxd.ksunext.ui.util.rootAvailable()
+    fun checkUAPIMismatch(): Boolean {
+        return kernelUAPIVersion != managerUAPIVersion
+    }
+
+    fun requireNewKernel(): Boolean {
+        return (version != -1 && version < MINIMAL_SUPPORTED_KERNEL) || checkUAPIMismatch()
     }
 
     val KSU_WORK_DIR = "/data/adb/ksu/"

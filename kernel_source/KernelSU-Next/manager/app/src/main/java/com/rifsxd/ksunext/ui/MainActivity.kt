@@ -270,7 +270,7 @@ class MainActivity : FragmentActivity() {
                 val navigator = navController.rememberDestinationsNavigator()
 
                 val isManager = Natives.isManager
-                val fullFeatured = Natives.isFullFeatured()
+                val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
 
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = currentBackStackEntry?.destination?.route
@@ -658,7 +658,7 @@ private fun BottomBar(
 ) {
     val navigator = navController.rememberDestinationsNavigator()
     val isManager = Natives.isManager
-    val fullFeatured = Natives.isFullFeatured()
+    val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
 
     val visibleDestinations = remember(fullFeatured) {
         BottomBarDestination.entries.filter { fullFeatured || !it.rootRequired }
