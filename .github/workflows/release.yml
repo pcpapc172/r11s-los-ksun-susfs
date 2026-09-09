@@ -82,6 +82,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: r11s-LineageOS-KSUN-SUSFS-*.zip
+          files: |
+            r11s-LineageOS-KSUN-SUSFS-*.zip
+            manager_apk/*.apk
           body_path: ${{ steps.notes.outputs.path || null }}
           generate_release_notes: true
