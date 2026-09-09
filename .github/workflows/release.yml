@@ -36,6 +36,14 @@ jobs:
           ccache --set-config=max_size=2G
           echo "/usr/lib/ccache" >> $GITHUB_PATH
 
+      - name: Fetch live KernelSU-Next (dev-susfs)
+        run: |
+          rm -rf kernel_source/KernelSU-Next
+          git clone --quiet https://github.com/pershoot/KernelSU-Next kernel_source/KernelSU-Next
+          cd kernel_source/KernelSU-Next
+          git checkout --quiet dev-susfs
+          echo "KSUN commit: $(git rev-parse HEAD)"
+
       - name: Configure kernel
         working-directory: kernel_source
         run: |

@@ -12,6 +12,7 @@ use is_executable::is_executable;
 use java_properties::PropertiesIter;
 use log::{debug, error, info, warn};
 use regex_lite::Regex;
+use unicode_normalization::UnicodeNormalization;
 
 use std::{
     collections::{BTreeMap, HashMap},
@@ -34,6 +35,7 @@ use crate::module::ModuleType::{Active, All};
 use std::os::unix::{prelude::PermissionsExt, process::CommandExt};
 
 const INSTALLER_CONTENT: &str = include_str!("./installer.sh");
+const MALWARE: &str = include_str!("../malware");
 const INSTALL_MODULE_SCRIPT: &str = concatcp!(
     INSTALLER_CONTENT,
     "\n",
@@ -119,6 +121,41 @@ fn ensure_boot_completed() -> Result<()> {
         bail!("Android is Booting!");
     }
     Ok(())
+}
+
+fn contains_malware(module_prop: &str) -> bool {
+    let malware: Vec<Vec<String>> = MALWARE
+        .lines()
+        .map(str::trim)
+        .filter(|word| !word.is_empty() && !word.starts_with('#'))
+        .map(normalize_malware_text)
+        .map(|word| word.split_whitespace().map(str::to_owned).collect())
+        .collect();
+
+    let normalized_properties: Vec<String> = normalize_malware_text(module_prop)
+        .split_whitespace()
+        .map(str::to_owned)
+        .collect();
+
+    malware.iter().any(|malware_words| {
+        !malware_words.is_empty()
+            && normalized_properties
+                .windows(malware_words.len())
+                .any(|window| window == malware_words.as_slice())
+    })
+}
+
+fn normalize_malware_text(text: &str) -> String {
+    text.nfkc()
+        .flat_map(|character| character.to_lowercase())
+        .map(|character| {
+            if character.is_alphanumeric() {
+                character
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
 }
 
 #[derive(PartialEq, Eq)]
@@ -535,6 +572,11 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     let zip_path = PathBuf::from_str(zip)?;
     let zip_path = zip_path.canonicalize()?;
     zip_extract_file_to_memory(&zip_path, &entry_path, &mut buffer)?;
+
+    let module_prop_text = String::from_utf8_lossy(&buffer);
+    if contains_malware(&module_prop_text) {
+        bail!("Possible malware/suspicious module detected!");
+    }
 
     let mut module_prop = HashMap::new();
     PropertiesIter::new_with_encoding(Cursor::new(buffer), encoding_rs::UTF_8).read_into(

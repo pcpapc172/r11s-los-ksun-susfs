@@ -11,8 +11,13 @@
 extern struct cred *ksu_cred;
 extern bool ksu_late_loaded;
 extern bool allow_shell;
+#ifdef MODULE
+extern bool ksu_bundled;
+#endif
 extern struct selinux_policy *backup_sepolicy;
 extern bool ksu_no_custom_rc;
+
+int ksu_security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
 
 static inline int startswith(char *s, char *prefix)
 {
