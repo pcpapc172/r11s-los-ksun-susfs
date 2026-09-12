@@ -1,0 +1,22 @@
+name: Fetch textbook PDF
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download PDF
+        run: |
+          mkdir -p tmp-download
+          curl -L -A "Mozilla/5.0" -o tmp-download/Karofanavari-7_Daneshchi.iR.pdf "https://dl.daneshchi.ir/file/chap-school/Karofanavari-7_Daneshchi.iR.pdf"
+          ls -la tmp-download
+          file tmp-download/Karofanavari-7_Daneshchi.iR.pdf
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: karofanavari7-pdf
+          path: tmp-download/Karofanavari-7_Daneshchi.iR.pdf
+          retention-days: 3
