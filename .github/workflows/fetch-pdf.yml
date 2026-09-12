@@ -25,3 +25,12 @@ jobs:
           name: karofanavari7-pdf
           path: tmp-download/Karofanavari-7_Daneshchi.iR.pdf
           retention-days: 3
+      - name: Commit PDF to branch
+        run: |
+          mkdir -p tmp-textbook
+          cp tmp-download/Karofanavari-7_Daneshchi.iR.pdf tmp-textbook/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f tmp-textbook/Karofanavari-7_Daneshchi.iR.pdf
+          git commit -m "Add downloaded textbook PDF (temporary, for content extraction)"
+          git push origin HEAD:claude/karofanavari-7-modules-u339vq
