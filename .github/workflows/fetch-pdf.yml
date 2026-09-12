@@ -8,6 +8,9 @@ on:
     paths:
       - '.github/workflows/fetch-pdf.yml'
 
+permissions:
+  contents: write
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
