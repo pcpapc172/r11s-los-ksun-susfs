@@ -45,7 +45,7 @@ case $kernel_version in
     *) ksu_supported=false ;;
 esac
 
-ui_print " " "  -> Wild Kernels Supported: $ksu_supported"
+ui_print " " "  -> GKI kernel version supported: $ksu_supported"
 $ksu_supported || abort "  -> Non-GKI device, abort."
 
 # boot install
@@ -59,25 +59,6 @@ else
 fi
 
 ui_print " "
-ui_print "WildKernels Telegram Channel:"
-ui_print "https://t.me/WildKernelsTG"
-ui_print " "
-ui_print "WildKernels Website:"
-ui_print "https://wildkernels.dev"
-ui_print " "
-ui_print "GKI_KernelSU_SUSFS GitHub Repository:"
-ui_print "https://github.com/WildKernels/GKI_KernelSU_SUSFS"
-ui_print "GKI kernels with KernelSU and SUSFS."
-ui_print " "
-ui_print "OnePlus_KernelSU_SUSFS GitHub Repository:"
-ui_print "https://github.com/WildKernels/OnePlus_KernelSU_SUSFS"
-ui_print "OnePlus kernels with KernelSU and SUSFS."
-ui_print " "
-ui_print "Samsung_KernelSU_SUSFS GitHub Repository:"
-ui_print "https://github.com/WildKernels/Samsung_KernelSU_SUSFS"
-ui_print "Samsung kernels with KernelSU and SUSFS."
-ui_print " "
-ui_print "If you have any questions or need support, feel free to join our Telegram channel!" 
-ui_print " "
-ui_print "Thank you for using Wild Kernels! - TheWildJames"
+ui_print "r11s (Galaxy S23 FE) LineageOS - KernelSU-Next + SUSFS"
+ui_print "https://github.com/pcpapc172/r11s-los-ksun-susfs"
 ui_print " "
