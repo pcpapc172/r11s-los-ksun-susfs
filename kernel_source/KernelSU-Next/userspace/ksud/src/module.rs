@@ -3,6 +3,7 @@ use crate::utils::*;
 use crate::{
     assets, defs, ksucalls, metamodule,
     restorecon::{restore_syscon, setsyscon},
+    risk::{contains_risk, print_risk_block, print_risk_pause_prompt, print_risk_timeout_block, RiskSeverity},
     sepolicy,
 };
 
@@ -12,7 +13,6 @@ use is_executable::is_executable;
 use java_properties::PropertiesIter;
 use log::{debug, error, info, warn};
 use regex_lite::Regex;
-use unicode_normalization::UnicodeNormalization;
 
 use std::{
     collections::{BTreeMap, HashMap},
@@ -35,7 +35,6 @@ use crate::module::ModuleType::{Active, All};
 use std::os::unix::{prelude::PermissionsExt, process::CommandExt};
 
 const INSTALLER_CONTENT: &str = include_str!("./installer.sh");
-const MALWARE: &str = include_str!("../malware");
 const INSTALL_MODULE_SCRIPT: &str = concatcp!(
     INSTALLER_CONTENT,
     "\n",
@@ -121,41 +120,6 @@ fn ensure_boot_completed() -> Result<()> {
         bail!("Android is Booting!");
     }
     Ok(())
-}
-
-fn contains_malware(module_prop: &str) -> bool {
-    let malware: Vec<Vec<String>> = MALWARE
-        .lines()
-        .map(str::trim)
-        .filter(|word| !word.is_empty() && !word.starts_with('#'))
-        .map(normalize_malware_text)
-        .map(|word| word.split_whitespace().map(str::to_owned).collect())
-        .collect();
-
-    let normalized_properties: Vec<String> = normalize_malware_text(module_prop)
-        .split_whitespace()
-        .map(str::to_owned)
-        .collect();
-
-    malware.iter().any(|malware_words| {
-        !malware_words.is_empty()
-            && normalized_properties
-                .windows(malware_words.len())
-                .any(|window| window == malware_words.as_slice())
-    })
-}
-
-fn normalize_malware_text(text: &str) -> String {
-    text.nfkc()
-        .flat_map(|character| character.to_lowercase())
-        .map(|character| {
-            if character.is_alphanumeric() {
-                character
-            } else {
-                ' '
-            }
-        })
-        .collect::<String>()
 }
 
 #[derive(PartialEq, Eq)]
@@ -524,6 +488,7 @@ pub fn regenerate_preinit_rc() -> Result<()> {
 
 pub fn handle_updated_modules() -> Result<()> {
     let modules_root = Path::new(MODULE_DIR);
+    ensure_dir_exists(modules_root)?;
     foreach_module(ModuleType::Updated, |updated_module| {
         if !updated_module.is_dir() {
             return Ok(());
@@ -574,8 +539,32 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     zip_extract_file_to_memory(&zip_path, &entry_path, &mut buffer)?;
 
     let module_prop_text = String::from_utf8_lossy(&buffer);
-    if contains_malware(&module_prop_text) {
-        bail!("Possible malware/suspicious module detected!");
+    if let Some(risk_match) = contains_risk(&module_prop_text) {
+        match risk_match.severity {
+            RiskSeverity::Low | RiskSeverity::Medium => {
+                print_risk_pause_prompt(risk_match.severity, &risk_match.reason);
+
+                let volume_down = Command::new(assets::BUSYBOX_PATH)
+                    .args([
+                        "ash",
+                        "-c",
+                        "timeout 5 /system/bin/getevent -ql 2>/dev/null | grep -q 'KEY_VOLUMEDOWN'",
+                    ])
+                    .status()
+                    .with_context(|| "Failed to wait for volume-down key")?;
+
+                if !volume_down.success() {
+                    print_risk_timeout_block();
+                    bail!("Module installation stopped");
+                }
+
+                println!("✅ Installation allowed after user confirmation.\n");
+            }
+            RiskSeverity::High | RiskSeverity::Extreme => {
+                print_risk_block(risk_match.severity, &risk_match.reason);
+                bail!("Module installation blocked");
+            }
+        }
     }
 
     let mut module_prop = HashMap::new();

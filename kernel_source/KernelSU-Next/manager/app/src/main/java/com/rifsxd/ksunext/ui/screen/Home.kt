@@ -675,16 +675,7 @@ private fun TopBar(
     ) { }
 
     val context = LocalContext.current
-    val windowInfo = androidx.compose.ui.platform.LocalWindowInfo.current
-
-    LaunchedEffect(windowInfo.isWindowFocused) {
-        if (windowInfo.isWindowFocused) {
-            isSpinning = true
-            rotationTarget += 360f * 6
-        }
-    }
-
-        TopAppBar(
+    TopAppBar(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

@@ -6,6 +6,10 @@
 #include <linux/sched.h>
 #include <linux/workqueue.h>
 
+#if !defined(CONFIG_KPROBES) && !defined(CONFIG_KSU_SUSFS)
+#error "KernelSU requires either CONFIG_KPROBES or CONFIG_KSU_SUSFS to be enabled!"
+#endif
+
 #include "policy/allowlist.h"
 #include "policy/app_profile.h"
 #include "policy/feature.h"

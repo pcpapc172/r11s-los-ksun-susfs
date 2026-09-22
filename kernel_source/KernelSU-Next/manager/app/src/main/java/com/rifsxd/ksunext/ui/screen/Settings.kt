@@ -87,7 +87,8 @@ fun SettingScreen(navigator: DestinationsNavigator) {
 
     val scrollState = LocalScrollState.current
     val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (scrollState?.isNavBarEnabled?.value == false)
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
+    val navBarPadding =
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
 
     val bottomBarScrollState = LocalScrollState.current
     val bottomBarScrollConnection = if (bottomBarScrollState != null) {
@@ -104,6 +105,12 @@ fun SettingScreen(navigator: DestinationsNavigator) {
     }
     val loadingDialog = rememberLoadingDialog()
 
+    var isUnrooted by remember { mutableStateOf(!rootAvailable()) }
+
+    LaunchedEffect(Unit) {
+        isUnrooted = !rootAvailable()
+    }
+
     val exportBugreportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/gzip")
     ) { uri: Uri? ->
@@ -111,7 +118,8 @@ fun SettingScreen(navigator: DestinationsNavigator) {
         scope.launch(Dispatchers.IO) {
             loadingDialog.show()
             context.contentResolver.openOutputStream(uri)?.use { output ->
-                getBugreportFile(context).inputStream().use {
+                val bugReport = if (isUnrooted) getBugreportFileUnrooted(context) else getBugreportFile(context)
+                    bugReport.inputStream().use {
                     it.copyTo(output)
                 }
             }
@@ -189,7 +197,8 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                 exportBugreportLauncher = exportBugreportLauncher,
                 loadingDialog = loadingDialog,
                 scope = scope,
-                context = context
+                context = context,
+                isUnrooted = isUnrooted
             )
 
             Spacer(Modifier)
@@ -358,14 +367,19 @@ private fun KernelFeaturesCard(
                         0 -> {}
                         -OsConstants.EAGAIN -> {
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(context, R.string.settings_selinux_hide_reboot_required,
-                                    Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context, R.string.settings_selinux_hide_reboot_required,
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
+
                         else -> {
                             withContext(Dispatchers.Main) {
-                                Toast.makeText(context, context.getString(R.string.settings_selinux_hide_failed, status),
-                                    Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context, context.getString(R.string.settings_selinux_hide_failed, status),
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
                     }
@@ -497,7 +511,8 @@ private fun AppSettingsCard(
     exportBugreportLauncher: androidx.activity.result.ActivityResultLauncher<String>,
     loadingDialog: LoadingDialogHandle,
     scope: kotlinx.coroutines.CoroutineScope,
-    context: android.content.Context
+    context: android.content.Context,
+    isUnrooted: Boolean
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -629,11 +644,13 @@ private fun AppSettingsCard(
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 leadingContent = { Icon(Icons.Filled.BugReport, null) },
                 headlineContent = {
-                    Text(
-                        text = stringResource(R.string.export_log),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                        Text(
+                            text = stringResource(
+                                if (isUnrooted) R.string.export_log_unrooted else R.string.export_log
+                            ),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
                 }
             )
 
@@ -650,7 +667,11 @@ private fun AppSettingsCard(
                         scope.launch {
                             val bugreport = loadingDialog.withLoading {
                                 withContext(Dispatchers.IO) {
-                                    getBugreportFile(context)
+                                    if (isUnrooted) {
+                                        getBugreportFileUnrooted(context)
+                                    } else {
+                                        getBugreportFile(context)
+                                    }
                                 }
                             }
                             val uri: Uri = FileProvider.getUriForFile(
@@ -782,9 +803,11 @@ fun UninstallItem(
                         UninstallType.PERMANENT -> navigator.navigate(
                             FlashScreenDestination(FlashIt.FlashUninstall)
                         )
+
                         UninstallType.RESTORE_STOCK_IMAGE -> navigator.navigate(
                             FlashScreenDestination(FlashIt.FlashRestore)
                         )
+
                         UninstallType.NONE -> Unit
                     }
                 }

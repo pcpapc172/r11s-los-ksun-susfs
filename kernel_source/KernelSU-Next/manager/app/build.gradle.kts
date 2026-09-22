@@ -92,9 +92,12 @@ android {
         includeInBundle = false
     }
 
-    androidResources {
-        generateLocaleConfig = true
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
+
 }
 
 ksp {

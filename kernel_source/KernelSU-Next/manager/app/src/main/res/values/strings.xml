@@ -94,6 +94,7 @@
     <string name="show_system_apps">Show system apps</string>
     <string name="hide_system_apps">Hide system apps</string>
     <string name="export_log">Export logs</string>
+    <string name="export_log_unrooted">Export logs (non-root)</string>
     <string name="safe_mode">Safe mode</string>
     <string name="jailbreak_mode">Jailbreak mode</string>
     <string name="reboot_to_apply">Reboot to take effect</string>
@@ -209,6 +210,7 @@
     <string name="settings_enable_su">SU compatibility</string>
     <string name="settings_enable_su_summary">Allow the ability of any app to gain root privileges via the ⁠su command (existing root processes won\'t be affected).</string>
     <string name="settings_language">Language</string>
+    <string name="select_language">Select Language</string>
     <string name="system_default">System default</string>
     <string name="settings_banner">Enable banners</string>
     <string name="settings_banner_summary">Show background banners for modules.</string>
