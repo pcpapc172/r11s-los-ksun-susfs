@@ -4,9 +4,18 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing tested tag to build and publish'
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 
 jobs:
   build-and-release:
@@ -14,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref_name }}
 
       - name: Install dependencies
         run: |
@@ -96,22 +107,23 @@ jobs:
           cp -r anykernel3_template ak3_out
           cp kernel_source/out/arch/arm64/boot/Image ak3_out/Image
           cd ak3_out
-          zip -r9 "../r11s-LineageOS-KSUN-SUSFS-${GITHUB_REF_NAME}.zip" . -x '*.git*'
+          zip -r9 "../r11s-LineageOS-KSUN-SUSFS-${RELEASE_TAG}.zip" . -x '*.git*'
 
       - name: Resolve release notes
         id: notes
         run: |
-          NOTES_FILE="docs/release-notes/${GITHUB_REF_NAME}.md"
+          NOTES_FILE="docs/release-notes/${RELEASE_TAG}.md"
           if [ -f "$NOTES_FILE" ]; then
             echo "path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
           else
-            echo "No prewritten notes for $GITHUB_REF_NAME, using auto-generated notes only."
+            echo "No prewritten notes for $RELEASE_TAG, using auto-generated notes only."
             echo "path=" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
             r11s-LineageOS-KSUN-SUSFS-*.zip
             manager_apk/*.apk

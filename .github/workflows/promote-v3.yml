@@ -1,0 +1,64 @@
+name: Promote successful build to v3.0.0
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/promote-v3.yml']
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: promote-v3.0.0
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Wait for the tested kernel build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for attempt in $(seq 1 170); do
+            gh api "repos/$REPO/actions/runs/38206872816" > /tmp/build-run.json
+            status=$(jq -r .status /tmp/build-run.json)
+            test "$(jq -r .head_sha /tmp/build-run.json)" = 343918c81abf52c27f8ff637986fb68dd358c8c7
+            echo "Kernel build: $status"
+            if [ "$status" = completed ]; then
+              conclusion=$(jq -r .conclusion /tmp/build-run.json)
+              echo "Kernel build conclusion: $conclusion"
+              test "$conclusion" = success
+              exit 0
+            fi
+            sleep 30
+          done
+          echo 'Timed out waiting for the kernel build.' >&2
+          exit 1
+      - name: Tag the successful commit and start its release build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = '343918c81abf52c27f8ff637986fb68dd358c8c7';
+            const tag = 'v3.0.0';
+            const run = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: 38206872816 });
+            if (run.data.conclusion !== 'success' || run.data.head_sha !== sha) {
+              throw new Error('The requested commit has not passed its kernel build.');
+            }
+            try {
+              const existing = await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
+              if (existing.data.object.sha !== sha) throw new Error('v3.0.0 already points to another commit.');
+              core.info('The requested tag already exists; leaving it untouched.');
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.git.createRef({ owner, repo, ref: `refs/tags/${tag}`, sha });
+            // Tags created with GITHUB_TOKEN do not trigger push workflows.
+            // Dispatch the release explicitly, checking out the tested tag.
+            await github.rest.actions.createWorkflowDispatch({
+              owner, repo, workflow_id: 'release.yml', ref: 'main',
+              inputs: { release_tag: tag }
+            });
+            core.info(`Created ${tag} at ${sha} and dispatched Release kernel.`);
