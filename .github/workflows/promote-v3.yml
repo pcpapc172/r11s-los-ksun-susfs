@@ -40,12 +40,25 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const sha = '343918c81abf52c27f8ff637986fb68dd358c8c7';
+            const testedSha = '343918c81abf52c27f8ff637986fb68dd358c8c7';
+            const sha = context.sha;
             const tag = 'v3.0.0';
             const run = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: 38206872816 });
-            if (run.data.conclusion !== 'success' || run.data.head_sha !== sha) {
+            if (run.data.conclusion !== 'success' || run.data.head_sha !== testedSha) {
               throw new Error('The requested commit has not passed its kernel build.');
             }
+            const tested = await github.rest.git.getCommit({ owner, repo, commit_sha: testedSha });
+            const current = await github.rest.git.getCommit({ owner, repo, commit_sha: sha });
+            const before = await github.rest.git.getTree({ owner, repo, tree_sha: tested.data.tree.sha });
+            const after = await github.rest.git.getTree({ owner, repo, tree_sha: current.data.tree.sha });
+            for (const path of ['kernel_source', 'anykernel3_template']) {
+              const oldEntry = before.data.tree.find(e => e.path === path);
+              const newEntry = after.data.tree.find(e => e.path === path);
+              if (!oldEntry || !newEntry || oldEntry.sha !== newEntry.sha) {
+                throw new Error(`${path} differs from the successful build.`);
+              }
+            }
+            core.info(`Verified kernel and packaging match tested commit ${testedSha}.`);
             try {
               const existing = await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
               if (existing.data.object.sha !== sha) throw new Error('v3.0.0 already points to another commit.');
