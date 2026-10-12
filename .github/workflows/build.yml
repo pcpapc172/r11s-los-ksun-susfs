@@ -8,6 +8,7 @@ on:
       - 'kernel_source/**'
       - 'anykernel3_template/**'
       - '.github/workflows/build.yml'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 jobs:
@@ -43,15 +44,43 @@ jobs:
           clang --version
           ld.lld --version
 
-      - name: Fetch KernelSU-Next v3.4.1 (dev-susfs)
+      - name: Fetch pinned KernelSU-Next and align Manager version
+        run: bash .github/scripts/prepare-ksun.sh
+
+      - name: Verify official Manager build provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          rm -rf kernel_source/KernelSU-Next
-          git clone --quiet https://github.com/pershoot/KernelSU-Next kernel_source/KernelSU-Next
-          cd kernel_source/KernelSU-Next
-          git checkout --quiet dev-susfs
-          git reset --hard 188cf08dae644d6ede3806c258b7af11d36dca93
-          git merge-base --is-ancestor v3.4.1 HEAD
-          echo "KSUN commit: $(git rev-parse HEAD)"
+          gh api repos/KernelSU-Next/KernelSU-Next/actions/runs/38150809852 > /tmp/ksun-manager-run.json
+          python3 - <<'PYCODE'
+          import json
+          with open('/tmp/ksun-manager-run.json') as f:
+              run = json.load(f)
+          assert run['head_sha'] == '3f64b8ce28279ed96118212bdbfc49010dbc8936', run['head_sha']
+          assert run['conclusion'] == 'success', run['conclusion']
+          PYCODE
+          rm -rf manager_apk
+
+      - name: Download official Manager APKs from the matching commit
+        uses: actions/download-artifact@v4
+        with:
+          repository: KernelSU-Next/KernelSU-Next
+          run-id: 38150809852
+          artifact-ids: '11706766540,11707175560'
+          github-token: ${{ github.token }}
+          path: manager_apk
+          merge-multiple: true
+
+      - name: Verify Manager pair and record provenance
+        run: |
+          test -f manager_apk/KernelSU_Next_v3.4.1-6-g3f64b8ce_33339-release.apk
+          test -f manager_apk/KernelSU_Next_v3.4.1-6-g3f64b8ce-spoofed_33339-release.apk
+          printf '%s\n' \
+            'KernelSU: pershoot/KernelSU-Next@188cf08dae644d6ede3806c258b7af11d36dca93' \
+            'Managers: KernelSU-Next/KernelSU-Next@3f64b8ce28279ed96118212bdbfc49010dbc8936' \
+            'Official Manager workflow run: 38150809852' \
+            'Kernel and Manager version code: 33339' > manager_apk/provenance.txt
+          sha256sum manager_apk/*.apk >> manager_apk/provenance.txt
 
       - name: Configure kernel
         working-directory: kernel_source
@@ -82,6 +111,14 @@ jobs:
         with:
           name: r11s-KSUN-SUSFS-${{ github.sha }}
           path: r11s-LineageOS-KSUN-SUSFS-*.zip
+          retention-days: 14
+
+      - name: Upload matching official Managers
+        uses: actions/upload-artifact@v4
+        with:
+          name: matching-managers-${{ github.sha }}
+          path: manager_apk/
+          if-no-files-found: error
           retention-days: 14
 
       - name: Upload build log context

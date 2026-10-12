@@ -17,8 +17,14 @@ LineageOS (upstream `lineage-24.0`).
 
 - **KernelSU-Next**: `pershoot/KernelSU-Next` fork, `dev-susfs` branch
   (v3.4.1-based), commit `188cf08dae644d6ede3806c258b7af11d36dca93`.
-  Both workflows fetch full history and reset `dev-susfs` to this commit
-  so the build uses this snapshot with upstream git-based versioning.
+  Both workflows explicitly fetch this SHA, even after upstream rebases.
+  Versioning is anchored to original upstream commit
+  `3f64b8ce28279ed96118212bdbfc49010dbc8936` (version code `33339`),
+  matching the official normal and spoofed Manager APKs from CI run
+  `38150809852`. The intervening base commit only changes a bot script.
+  CI downloads both APKs; tagged releases attach them and their provenance.
+  If upstream expires these artifacts, the workflow fails instead of
+  attaching the older APKs stored in this repository.
 - **SUSFS**: v2.3.0, patched in via the `gki-android12-5.10` branch of
   `simonpunk/susfs4ksu` (matching this kernel's KMI generation), with two
   upstream fix commits from `pershoot/susfs4ksu` cherry-picked in.
