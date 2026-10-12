@@ -43,12 +43,14 @@ jobs:
           clang --version
           ld.lld --version
 
-      - name: Fetch live KernelSU-Next (dev-susfs)
+      - name: Fetch KernelSU-Next v3.4.1 (dev-susfs)
         run: |
           rm -rf kernel_source/KernelSU-Next
           git clone --quiet https://github.com/pershoot/KernelSU-Next kernel_source/KernelSU-Next
           cd kernel_source/KernelSU-Next
           git checkout --quiet dev-susfs
+          git reset --hard 188cf08dae644d6ede3806c258b7af11d36dca93
+          git merge-base --is-ancestor v3.4.1 HEAD
           echo "KSUN commit: $(git rev-parse HEAD)"
 
       - name: Configure kernel

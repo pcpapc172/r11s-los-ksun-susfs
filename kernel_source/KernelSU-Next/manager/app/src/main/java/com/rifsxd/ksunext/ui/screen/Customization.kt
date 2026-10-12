@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import com.rifsxd.ksunext.ui.LocalNavBarEnabled
 import com.rifsxd.ksunext.ui.LocalScrollState
 import com.rifsxd.ksunext.ui.rememberScrollConnection
 import androidx.compose.ui.res.stringResource
@@ -73,7 +74,8 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
     val ksuVersion = if (isManager) Natives.version else null
 
     val scrollState = LocalScrollState.current
-    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (scrollState?.isNavBarEnabled?.value == false)
+    val navBarEnabled = LocalNavBarEnabled.current
+    val isNavBarHidden = (scrollState?.isScrollingDown?.value ?: false) || (navBarEnabled?.value == false)
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + if (isNavBarHidden) 0.dp else 112.dp
 
     val context = LocalContext.current
@@ -191,21 +193,6 @@ fun CustomizationScreen(navigator: DestinationsNavigator) {
             ) { checked ->
                 activity?.setNavBarEnabled(checked)
                 enableNavBar = checked
-            }
-
-            var enableHaptics by rememberSaveable {
-                mutableStateOf(
-                    prefs.getBoolean("enable_haptics", false)
-                )
-            }
-            SwitchItem(
-                icon = Icons.Filled.Vibration,
-                title = stringResource(id = R.string.settings_haptics),
-                summary = stringResource(id = R.string.settings_haptics_summary),
-                checked = enableHaptics
-            ) { checked ->
-                activity?.setHapticsEnabled(checked)
-                enableHaptics = checked
             }
         }
     }

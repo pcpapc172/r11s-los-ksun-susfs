@@ -2,12 +2,12 @@
 
 Archive of the patched kernel source and build output for the Samsung
 Galaxy S23 FE (codename `r11s`, SM-S711B, Exynos 2200 / S5E9925) running
-LineageOS 23.2.
+LineageOS (upstream `lineage-24.0`).
 
 ## Contents
 
-- `kernel_source/` — the full ExtremeXT `android_kernel_samsung_s5e9925`
-  (`lineage-23.2`) kernel tree, Linux 5.10.260, with KernelSU-Next and
+- `kernel_source/` — the full LineageOS `android_kernel_samsung_s5e9925`
+  (`lineage-24.0`, commit `d5200686521302b71657c54a376a2bd75633ad49`) kernel tree, Linux 5.10.260, with KernelSU-Next and
   SUSFS integrated on top. Build artifacts (`out/`) are excluded — they're
   regenerable from this source.
 - `anykernel3_zip/` — the final flashable AnyKernel3 zip built from this
@@ -16,7 +16,9 @@ LineageOS 23.2.
 ## What's integrated
 
 - **KernelSU-Next**: `pershoot/KernelSU-Next` fork, `dev-susfs` branch
-  (v3.3.0-based), plus WildKernels' `static.patch` compatibility fix.
+  (v3.4.1-based), commit `188cf08dae644d6ede3806c258b7af11d36dca93`.
+  Both workflows fetch full history and reset `dev-susfs` to this commit
+  so the build uses this snapshot with upstream git-based versioning.
 - **SUSFS**: v2.3.0, patched in via the `gki-android12-5.10` branch of
   `simonpunk/susfs4ksu` (matching this kernel's KMI generation), with two
   upstream fix commits from `pershoot/susfs4ksu` cherry-picked in.

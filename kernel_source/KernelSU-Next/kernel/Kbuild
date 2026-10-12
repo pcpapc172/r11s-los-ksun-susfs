@@ -1,5 +1,6 @@
 kernelsu-objs := core/init.o
 kernelsu-objs += feature/kernel_umount.o
+kernelsu-objs += feature/module_blacklist.o
 kernelsu-objs += feature/sulog.o
 kernelsu-objs += feature/sucompat.o
 
@@ -8,6 +9,8 @@ ifneq ($(filter y arm64 aarch64,$(CONFIG_ARM64) $(ARCH)),)
 KSU_ARCH := arm64
 else ifneq ($(filter y x86_64 i386,$(CONFIG_X86_64) $(ARCH)),)
 KSU_ARCH := x86_64
+else ifneq ($(filter y riscv riscv64,$(CONFIG_RISCV) $(ARCH)),)
+KSU_ARCH := riscv64
 endif
 
 # Core utilities ('selinux hide'/hooks)
@@ -183,3 +186,4 @@ endif
 endif
 
 # Keep a new line here!! Because someone may append config
+

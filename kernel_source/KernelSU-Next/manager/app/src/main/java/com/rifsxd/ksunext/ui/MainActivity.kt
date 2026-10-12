@@ -79,11 +79,10 @@ data class ScrollState(
     val isScrollingDown: MutableState<Boolean>,
     val scrollOffset: MutableState<Float>,
     val previousScrollOffset: MutableState<Float>,
-    val isNavBarEnabled: State<Boolean>,
-    val isHapticsEnabled: State<Boolean>
 )
 
 val LocalScrollState = compositionLocalOf<ScrollState?> { null }
+val LocalNavBarEnabled = compositionLocalOf<State<Boolean>?> { null }
 
 @Composable
 fun rememberScrollConnection(
@@ -207,7 +206,6 @@ class MainActivity : FragmentActivity() {
     var moduleActionId by mutableStateOf<String?>(null)
     var amoledModeState = mutableStateOf(false)
     var navBarEnabled = mutableStateOf(true)
-    var hapticsEnabled = mutableStateOf(false)
     private val handler = Handler(Looper.getMainLooper())
 
     val moduleViewModel: ModuleViewModel by viewModels()
@@ -239,7 +237,6 @@ class MainActivity : FragmentActivity() {
             val prefsInit = getSharedPreferences("settings", MODE_PRIVATE)
             amoledModeState.value = prefsInit.getBoolean("enable_amoled", false)
             navBarEnabled.value = prefsInit.getBoolean("enable_navbar", true)
-            hapticsEnabled.value = prefsInit.getBoolean("enable_haptics", false)
         } catch (_: Exception) {}
 
         val isManager = Natives.isManager
@@ -421,9 +418,8 @@ class MainActivity : FragmentActivity() {
                                         isScrollingDown = isScrollingDown,
                                         scrollOffset = scrollOffset,
                                         previousScrollOffset = previousScrollOffset,
-                                        isNavBarEnabled = navBarEnabled,
-                                        isHapticsEnabled = hapticsEnabled
-                                    )
+                                    ),
+                                    LocalNavBarEnabled provides navBarEnabled
                                 ) {
                                     val visibleDestinations = remember(fullFeatured) {
                                         BottomBarDestination.entries.filter { fullFeatured || !it.rootRequired }
@@ -451,9 +447,7 @@ class MainActivity : FragmentActivity() {
                                             currentRoute = currentRoute,
                                             destinations = visibleDestinations,
                                             onNavigate = {
-                                                if (hapticsEnabled.value) {
-                                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                                }
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.GestureEnd)
                                                 navigateToIndex(it)
                                             }
                                         )
@@ -641,14 +635,6 @@ class MainActivity : FragmentActivity() {
             prefs.edit().putBoolean("enable_navbar", enabled).apply()
         } catch (_: Exception) {}
         navBarEnabled.value = enabled
-    }
-
-    fun setHapticsEnabled(enabled: Boolean) {
-        try {
-            val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-            prefs.edit().putBoolean("enable_haptics", enabled).apply()
-        } catch (_: Exception) {}
-        hapticsEnabled.value = enabled
     }
 
     override fun onStart() {

@@ -267,10 +267,14 @@
   <string name="allow_shell_summary">总是允许 adb shell 调用 su ，非必要请勿开启。</string>
   <string name="enable_adb">启动时强制启用 ADB 调试</string>
   <string name="enable_adb_summary">强制允许 USB 调试并取消 adb 认证，非必要请勿开启。</string>
+  <string name="install_block_modules">屏蔽内核模块</string>
+  <string name="install_block_modules_summary">以逗号分隔的模块名，启动时阻止其加载，例如 oplus_secure_guard。留空则不屏蔽任何模块。</string>
+  <string name="install_block_modules_invalid">模块名只能包含字母、数字和下划线，且每个不超过 64 个字符。</string>
   <string name="advanced_options">高级选项</string>
   <string name="expand">展开</string>
   <string name="feature_status_unsupported_summary">内核不支持此特性</string>
   <string name="feature_status_managed_summary">此功能由模块管理</string>
+  <string name="feature_status_forced_summary">此功能已被启动配置强制指定</string>
   <string name="sulog_log_files">日志文件</string>
   <string name="sulog_failed_to_load">加载 sulog 失败</string>
   <string name="sulog_disabled_title">未启用 SU 日志</string>
@@ -311,4 +315,17 @@
   <string name="require_kernel_version_gki">Kernel update required</string>
   <string name="select_language">选择语言</string>
   <string name="export_log_unrooted">Export logs (non-root)</string>
+  <string name="settings_navbar">Navigation bar</string>
+  <string name="settings_navbar_summary">Enable the bottom navigation bar.</string>
+  <string name="settings_app_lock">App lock</string>
+  <string name="settings_app_lock_summary">Require authentication when opening the app.</string>
+  <string name="settings_app_lock_timeout">Grace period</string>
+  <string name="settings_app_lock_timeout_immediate">Immediate</string>
+  <string name="settings_app_lock_timeout_1m">1 minute</string>
+  <string name="settings_app_lock_timeout_5m">5 minutes</string>
+  <string name="biometric_prompt_subtitle">Unlock Manager</string>
+  <string name="biometric_prompt_subtitle_module">Unlock %1$s</string>
+  <string name="settings_app_lock_no_credential">Secure screen lock required.</string>
+  <string name="enable_risk">Enable risk detection</string>
+  <string name="enable_risk_summary">Enable install-time risk detection for modules.</string>
 </resources>
